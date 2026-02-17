@@ -1,0 +1,10 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+
+yahoo-finance:
+  api-key: test-key
+  api-host: yahoo-finance15.p.rapidapi.com
+  base-url: https://yahoo-finance15.p.rapidapi.com
