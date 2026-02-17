@@ -14,6 +14,11 @@ spring:
         format_sql: true
         default_batch_fetch_size: 100
 
+yahoo-finance:
+  api-key: ${YAHOO_FINANCE_API_KEY:}
+  api-host: ${YAHOO_FINANCE_API_HOST:yahoo-finance15.p.rapidapi.com}
+  base-url: https://yahoo-finance15.p.rapidapi.com
+
 server:
   port: 8080
 
