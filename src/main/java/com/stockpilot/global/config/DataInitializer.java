@@ -6,6 +6,10 @@ import com.stockpilot.knowledge.entity.Difficulty;
 import com.stockpilot.knowledge.entity.InvestmentTerm;
 import com.stockpilot.knowledge.entity.InvestmentTermRelation;
 import com.stockpilot.knowledge.entity.TermCategory;
+import com.stockpilot.knowledge.indicator.entity.EconomicIndicator;
+import com.stockpilot.knowledge.indicator.entity.Frequency;
+import com.stockpilot.knowledge.indicator.entity.IndicatorSource;
+import com.stockpilot.knowledge.indicator.repository.EconomicIndicatorRepository;
 import com.stockpilot.knowledge.repository.InvestmentTermRelationRepository;
 import com.stockpilot.knowledge.repository.InvestmentTermRepository;
 import com.stockpilot.knowledge.repository.TermCategoryRepository;
@@ -43,6 +47,7 @@ public class DataInitializer implements CommandLineRunner {
     private final TermCategoryRepository termCategoryRepository;
     private final InvestmentTermRepository investmentTermRepository;
     private final InvestmentTermRelationRepository termRelationRepository;
+    private final EconomicIndicatorRepository economicIndicatorRepository;
     private final ObjectMapper objectMapper;
 
     @Override
@@ -62,6 +67,12 @@ public class DataInitializer implements CommandLineRunner {
             initInvestmentTerms();
         } else {
             log.info("Investment terms already exist. Skipping term initialization.");
+        }
+
+        if (economicIndicatorRepository.count() == 0) {
+            initEconomicIndicators();
+        } else {
+            log.info("Economic indicators already exist. Skipping indicator initialization.");
         }
     }
 
@@ -228,6 +239,64 @@ public class DataInitializer implements CommandLineRunner {
 
         log.info("Investment terms initialized: {} categories, {} terms, {} relations.",
                 categoryByCode.size(), termByName.size(), relationCount);
+    }
+
+    private void initEconomicIndicators() {
+        log.info("Initializing economic indicators (metadata only — observations backfilled by scheduler)...");
+
+        saveIndicator(
+                "BASE_RATE", "한국 기준금리", "%", Frequency.DAILY, IndicatorSource.BOK,
+                "722Y001", "0101000",
+                "한국은행 금융통화위원회가 결정하는 정책금리. 시중 모든 금리의 앵커 역할.",
+                "기준금리 인상은 성장주 밸류에이션에 부정적, 예금/채권에 긍정적. 인하는 반대.",
+                "기준금리", 1
+        );
+        saveIndicator(
+                "USD_KRW", "원/달러 환율", "원", Frequency.DAILY, IndicatorSource.BOK,
+                "731Y001", "0000001",
+                "미국 달러에 대한 원화의 매매기준율.",
+                "원화 약세(환율 상승)는 수출주에 유리, 수입·내수 기업에 비용 부담. 외국인 자본 유출입에도 즉시 영향.",
+                "환율", 2
+        );
+        saveIndicator(
+                "CPI", "소비자물가지수", "지수", Frequency.MONTHLY, IndicatorSource.BOK,
+                "901Y009", "0",
+                "가계 소비 재화·서비스 가격을 가중평균한 물가지수. 인플레이션 측정의 대표 지표.",
+                "CPI가 목표(2%)를 크게 웃돌면 중앙은행이 금리 인상으로 대응 → 주식시장 압박.",
+                "CPI", 3
+        );
+        saveIndicator(
+                "GDP_GROWTH", "GDP 성장률", "%", Frequency.QUARTERLY, IndicatorSource.BOK,
+                "200Y106", "10111",
+                "실질 GDP의 전년동기 대비 성장률.",
+                "2분기 연속 역성장은 기술적 경기침체. 성장률 둔화는 기업 실적 전망과 직결.",
+                "GDP", 4
+        );
+
+        log.info("Economic indicator metadata initialized.");
+    }
+
+    private void saveIndicator(String code, String name, String unit, Frequency frequency,
+                               IndicatorSource source, String statCode, String itemCode,
+                               String description, String whyItMatters,
+                               String relatedTermName, int displayOrder) {
+        InvestmentTerm relatedTerm = investmentTermRepository.findByName(relatedTermName).orElse(null);
+        if (relatedTerm == null) {
+            log.warn("Related term '{}' not found for indicator '{}'. Saving without link.", relatedTermName, code);
+        }
+        economicIndicatorRepository.save(EconomicIndicator.builder()
+                .code(code)
+                .name(name)
+                .unit(unit)
+                .frequency(frequency)
+                .source(source)
+                .sourceStatCode(statCode)
+                .sourceItemCode(itemCode)
+                .description(description)
+                .whyItMatters(whyItMatters)
+                .relatedTerm(relatedTerm)
+                .displayOrder(displayOrder)
+                .build());
     }
 
     private record InvestmentTermSeed(List<CategorySeed> categories, List<TermSeed> terms) {}
