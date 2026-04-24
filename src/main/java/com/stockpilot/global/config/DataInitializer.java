@@ -1,5 +1,14 @@
 package com.stockpilot.global.config;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.stockpilot.knowledge.entity.Difficulty;
+import com.stockpilot.knowledge.entity.InvestmentTerm;
+import com.stockpilot.knowledge.entity.InvestmentTermRelation;
+import com.stockpilot.knowledge.entity.TermCategory;
+import com.stockpilot.knowledge.repository.InvestmentTermRelationRepository;
+import com.stockpilot.knowledge.repository.InvestmentTermRepository;
+import com.stockpilot.knowledge.repository.TermCategoryRepository;
 import com.stockpilot.stock.entity.DailyPrice;
 import com.stockpilot.stock.entity.Sector;
 import com.stockpilot.stock.entity.Stock;
@@ -9,13 +18,16 @@ import com.stockpilot.stock.repository.StockRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.InputStream;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -28,6 +40,10 @@ public class DataInitializer implements CommandLineRunner {
     private final SectorRepository sectorRepository;
     private final StockRepository stockRepository;
     private final DailyPriceRepository dailyPriceRepository;
+    private final TermCategoryRepository termCategoryRepository;
+    private final InvestmentTermRepository investmentTermRepository;
+    private final InvestmentTermRelationRepository termRelationRepository;
+    private final ObjectMapper objectMapper;
 
     @Override
     @Transactional
@@ -40,6 +56,12 @@ public class DataInitializer implements CommandLineRunner {
             initDailyPrices();
         } else {
             log.info("Daily price data already exists. Skipping price initialization.");
+        }
+
+        if (termCategoryRepository.count() == 0 && investmentTermRepository.count() == 0) {
+            initInvestmentTerms();
+        } else {
+            log.info("Investment terms already exist. Skipping term initialization.");
         }
     }
 
@@ -78,7 +100,6 @@ public class DataInitializer implements CommandLineRunner {
             return;
         }
 
-        // Daily Price seed data (90 trading days)
         Map<String, double[]> priceMap = Map.ofEntries(
                 Map.entry("AAPL",   new double[]{190.0, 50_000_000}),
                 Map.entry("MSFT",   new double[]{420.0, 25_000_000}),
@@ -139,4 +160,89 @@ public class DataInitializer implements CommandLineRunner {
 
         log.info("Seed data initialization completed. Generated daily prices for {} stocks.", stocks.size());
     }
+
+    private void initInvestmentTerms() {
+        log.info("Initializing investment terms...");
+
+        InvestmentTermSeed seed;
+        try (InputStream is = new ClassPathResource("data/investment-terms.json").getInputStream()) {
+            seed = objectMapper.readValue(is, new TypeReference<>() {});
+        } catch (Exception e) {
+            log.error("Failed to load investment-terms.json seed file", e);
+            return;
+        }
+
+        Map<String, TermCategory> categoryByCode = new HashMap<>();
+        for (CategorySeed c : seed.categories()) {
+            TermCategory saved = termCategoryRepository.save(TermCategory.builder()
+                    .code(c.code())
+                    .name(c.name())
+                    .displayOrder(c.displayOrder())
+                    .build());
+            categoryByCode.put(c.code(), saved);
+        }
+
+        Map<String, InvestmentTerm> termByName = new HashMap<>();
+        for (TermSeed t : seed.terms()) {
+            TermCategory category = categoryByCode.get(t.categoryCode());
+            if (category == null) {
+                log.warn("Unknown category code '{}' for term '{}'. Skipping.", t.categoryCode(), t.name());
+                continue;
+            }
+            InvestmentTerm saved = investmentTermRepository.save(InvestmentTerm.builder()
+                    .category(category)
+                    .name(t.name())
+                    .fullName(t.fullName())
+                    .summary(t.summary())
+                    .description(t.description())
+                    .formula(t.formula())
+                    .example(t.example())
+                    .difficulty(Difficulty.valueOf(t.difficulty()))
+                    .build());
+            termByName.put(t.name(), saved);
+        }
+
+        int relationCount = 0;
+        for (TermSeed t : seed.terms()) {
+            InvestmentTerm source = termByName.get(t.name());
+            if (source == null || t.relatedTermNames() == null) continue;
+            for (String relatedName : t.relatedTermNames()) {
+                InvestmentTerm target = termByName.get(relatedName);
+                if (target == null || target.getId().equals(source.getId())) continue;
+                if (!termRelationRepository.existsByTermIdAndRelatedTermId(source.getId(), target.getId())) {
+                    termRelationRepository.save(InvestmentTermRelation.builder()
+                            .term(source)
+                            .relatedTerm(target)
+                            .build());
+                    relationCount++;
+                }
+                if (!termRelationRepository.existsByTermIdAndRelatedTermId(target.getId(), source.getId())) {
+                    termRelationRepository.save(InvestmentTermRelation.builder()
+                            .term(target)
+                            .relatedTerm(source)
+                            .build());
+                    relationCount++;
+                }
+            }
+        }
+
+        log.info("Investment terms initialized: {} categories, {} terms, {} relations.",
+                categoryByCode.size(), termByName.size(), relationCount);
+    }
+
+    private record InvestmentTermSeed(List<CategorySeed> categories, List<TermSeed> terms) {}
+
+    private record CategorySeed(String code, String name, int displayOrder) {}
+
+    private record TermSeed(
+            String categoryCode,
+            String name,
+            String fullName,
+            String summary,
+            String description,
+            String formula,
+            String example,
+            String difficulty,
+            List<String> relatedTermNames
+    ) {}
 }

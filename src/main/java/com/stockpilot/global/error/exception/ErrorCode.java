@@ -22,6 +22,11 @@ public enum ErrorCode {
     WATCHLIST_ITEM_DUPLICATE(HttpStatus.CONFLICT, "W002", "Stock already in watchlist"),
     WATCHLIST_ITEM_NOT_FOUND(HttpStatus.NOT_FOUND, "W003", "Stock not in watchlist"),
 
+    // Knowledge (Investment Terms / Economic Indicators / Disclosures)
+    INVESTMENT_TERM_NOT_FOUND(HttpStatus.NOT_FOUND, "K001", "Investment term not found"),
+    INVESTMENT_TERM_DUPLICATE(HttpStatus.CONFLICT, "K002", "Investment term already exists"),
+    TERM_CATEGORY_NOT_FOUND(HttpStatus.NOT_FOUND, "K003", "Term category not found"),
+
     // External API
     EXTERNAL_API_ERROR(HttpStatus.SERVICE_UNAVAILABLE, "E001", "External API call failed");
 
