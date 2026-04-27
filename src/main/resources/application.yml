@@ -24,6 +24,23 @@ client:
     api-key: ${BOK_API_KEY:}
     base-url: https://ecos.bok.or.kr/api
     enabled: ${BOK_ENABLED:true}
+  dart:
+    api-key: ${DART_API_KEY:}
+    base-url: https://opendart.fss.or.kr
+    enabled: ${DART_ENABLED:true}
+
+disclosure:
+  tracked-tickers:
+    - "005930"  # 삼성전자
+    - "000660"  # SK하이닉스
+    - "035420"  # NAVER
+    - "035720"  # 카카오
+    - "005380"  # 현대차
+    - "051910"  # LG화학
+    - "005490"  # POSCO홀딩스
+    - "068270"  # 셀트리온
+    - "207940"  # 삼성바이오로직스
+    - "373220"  # LG에너지솔루션
 
 server:
   port: 8080
