@@ -26,6 +26,8 @@ public enum ErrorCode {
     INVESTMENT_TERM_NOT_FOUND(HttpStatus.NOT_FOUND, "K001", "Investment term not found"),
     INVESTMENT_TERM_DUPLICATE(HttpStatus.CONFLICT, "K002", "Investment term already exists"),
     TERM_CATEGORY_NOT_FOUND(HttpStatus.NOT_FOUND, "K003", "Term category not found"),
+    INDICATOR_NOT_FOUND(HttpStatus.NOT_FOUND, "K101", "Economic indicator not found"),
+    INDICATOR_SOURCE_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "K102", "Economic indicator source unavailable"),
 
     // External API
     EXTERNAL_API_ERROR(HttpStatus.SERVICE_UNAVAILABLE, "E001", "External API call failed");

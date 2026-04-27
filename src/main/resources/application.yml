@@ -19,6 +19,12 @@ yahoo-finance:
   api-host: ${YAHOO_FINANCE_API_HOST:yahoo-finance15.p.rapidapi.com}
   base-url: https://yahoo-finance15.p.rapidapi.com
 
+client:
+  bok:
+    api-key: ${BOK_API_KEY:}
+    base-url: https://ecos.bok.or.kr/api
+    enabled: ${BOK_ENABLED:true}
+
 server:
   port: 8080
 
