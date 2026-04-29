@@ -28,6 +28,9 @@ public enum ErrorCode {
     TERM_CATEGORY_NOT_FOUND(HttpStatus.NOT_FOUND, "K003", "Term category not found"),
     INDICATOR_NOT_FOUND(HttpStatus.NOT_FOUND, "K101", "Economic indicator not found"),
     INDICATOR_SOURCE_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "K102", "Economic indicator source unavailable"),
+    DISCLOSURE_NOT_FOUND(HttpStatus.NOT_FOUND, "K201", "Disclosure not found"),
+    DART_RATE_LIMITED(HttpStatus.TOO_MANY_REQUESTS, "K202", "DART API rate limit exceeded"),
+    DART_CORP_NOT_FOUND(HttpStatus.NOT_FOUND, "K203", "DART corp mapping not found"),
 
     // External API
     EXTERNAL_API_ERROR(HttpStatus.SERVICE_UNAVAILABLE, "E001", "External API call failed");
