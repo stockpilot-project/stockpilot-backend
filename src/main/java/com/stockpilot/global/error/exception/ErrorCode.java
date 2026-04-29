@@ -11,6 +11,9 @@ public enum ErrorCode {
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "C002", "Internal server error"),
     METHOD_NOT_ALLOWED(HttpStatus.METHOD_NOT_ALLOWED, "C003", "Method not allowed"),
     RESOURCE_NOT_FOUND(HttpStatus.NOT_FOUND, "C004", "Resource not found"),
+    MISSING_REQUIRED_PARAMETER(HttpStatus.BAD_REQUEST, "C005", "Missing required parameter"),
+    INVALID_PARAMETER_TYPE(HttpStatus.BAD_REQUEST, "C006", "Invalid parameter type"),
+    INVALID_REQUEST_BODY(HttpStatus.BAD_REQUEST, "C007", "Invalid request body"),
 
     // Stock
     STOCK_NOT_FOUND(HttpStatus.NOT_FOUND, "S001", "Stock not found"),
