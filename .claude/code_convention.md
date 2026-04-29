@@ -27,12 +27,28 @@ com.stockpilot.<domain>/
 
 ## Entity
 
-- `com.stockpilot.global.common.entity.Timestamp` 를 상속 (createdAt/updatedAt/deletedAt/softDelete 자동)
+- `com.stockpilot.global.common.entity.Timestamp` 를 상속 (createdAt/updatedAt/deletedAt 컬럼 자동)
 - `@NoArgsConstructor(access = AccessLevel.PROTECTED)` 로 무분별한 기본 생성자 차단
 - `@Setter` 금지 — 상태 변경은 의미 있는 메서드로 표현 (`update(...)`, `addItem(...)`)
 - 생성은 `@Builder` 로
 - 연관관계 기본값: `@ManyToOne(fetch = FetchType.LAZY)`
 - `@OneToMany`는 `mappedBy` + 필요 시 `cascade`, `orphanRemoval`
+- **Soft Delete 필수 부착**: 클래스 레벨 어노테이션 두 줄
+  ```java
+  @SQLDelete(sql = "UPDATE <table> SET deleted_at = NOW() WHERE id = ?")
+  @SQLRestriction("deleted_at IS NULL")
+  ```
+  - `repository.delete(entity)` → 자동으로 UPDATE 변환
+  - 모든 SELECT/JPQL → `WHERE deleted_at IS NULL` 자동 추가
+  - 같은 자연키 재등록 위해 V1 의 unique 제약은 V2 에서 부분 unique 인덱스 (`WHERE deleted_at IS NULL`) 로 대체됨 → 새 unique 컬럼 추가 시 마이그레이션도 부분 인덱스로 작성
+- 삭제 포함 조회는 `@Query(value = "...", nativeQuery = true)` 로 작성 (JPQL 은 자동 필터되므로 우회 불가)
+
+## DB 마이그레이션 (Flyway)
+
+- 모든 스키마 변경은 `src/main/resources/db/migration/V{N}__{snake_case_description}.sql` 추가
+- 적용된 마이그레이션 파일은 **절대 수정 금지** (Flyway 체크섬 깨짐) — 수정이 필요하면 V{N+1} 신규 파일
+- DDL 은 가능한 한 멱등하게 (`CREATE TABLE IF NOT EXISTS`, `DROP CONSTRAINT IF EXISTS`)
+- `ddl-auto: validate` 사용 — JPA 모델과 실제 스키마가 다르면 부팅 실패
 
 ## Repository
 
